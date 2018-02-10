@@ -8,7 +8,7 @@
 // ** Use it freely, change it, etc. at will.           **
 // *******************************************************
 
-//Latest version, questions, modifications:
+// Latest version, questions, modifications:
 //
 // https://github.com/sergio-hcsoft/Delphi-SpreadSheets
 // http://user.services.openoffice.org/en/forum/viewtopic.php?f=21&t=47644&p=219641
@@ -38,6 +38,11 @@
 }
 
 {CHANGE LOG:
+  V1.09: (10-02-2018 DD/MM/YYYY)
+  ** M.Tuellmann **
+  $DEFINE COMPILER_7_UP ... COMPILER_12_UP on demand without Compilers.inc
+  fix m_AmericanFormat on create
+  add SetPicture()
  V1.08: (18-10-2013 DD/MM/YYY)
    ***************************
    ** By user MARCELVK from **
@@ -95,7 +100,7 @@
  V1.02: Creating from a exiting file didn't set the AmericanFormat (thanxs Malte).
  V1.01:
    ***********************
-   ** By Malte Tüllmann **
+   ** By Malte TÃ¼llmann **
    ***********************
    -Excel2000/2003 save .xls files in a different way than 2007.
  V1.00:
@@ -126,7 +131,7 @@
    using a printer like PDFCreator was not posible).
  V0.95:
    -ActivateSheetByIndex detect imposible index and allows to insert sheet 100 (it will create all necesary sheets)
-   -SaveDocAs added a second optional parameter for OOo to use Excel97 format (rescued from V0.93 by Rômulo)
+   -SaveDocAs added a second optional parameter for OOo to use Excel97 format (rescued from V0.93 by RÃ´mulo)
    -A little stronger ValidateSheetName() (filter away \ and " too).
  V0.94:
    -OpenOffice V2 compatible (small changes)
@@ -136,7 +141,7 @@
    -New function ooCreateValue to hide all internals of OOo params creation
  V0.93:
    ***************************
-   ** By Rômulo Silva Ramos **
+   ** By RÃ´mulo Silva Ramos **
    ***************************
    -FontSize(Row, Col, Size): change font size in that cell.
    -BackgroundColor(row, col: integer; color:TColor);
@@ -199,6 +204,11 @@ UNIT UHojaCalc;
 //Find this file searching on google, or just try here:
 // https://code.google.com/p/virtual-treeview/source/browse/trunk/Common/Compilers.inc?r=235
 {$INCLUDE Compilers.inc}
+//or define q&d...
+{ $DEFINE COMPILER_6_UP }
+{ $DEFINE COMPILER_7_UP }
+{ $DEFINE COMPILER_8_UP }
+{ $DEFINE COMPILER_12_UP }
 
 INTERFACE
 
@@ -451,6 +461,7 @@ TYPE
                 PROPERTY CellTextByName[Range: string]: string read GetCellTextByName write SetCellTextByName;
                 //Aux functions
                 FUNCTION SwapColor (nColor: TColor): TColor;
+                PROCEDURE SetPicture(FileName: string; xPosMM, yPosMM, xWidthMM, xHeightMM, xContrast: variant);
               END {THojaCalc};
 
 
@@ -521,18 +532,13 @@ CONSTRUCTOR THojaCalc.Create (eMyTipo: TTipoHojaCalc; bMakeVisible: boolean; bRe
   {$ENDIF}
   {$IFDEF COMPILER_7_UP}
     GetLocaleFormatSettings( 0, m_AmericanFormat);
-    m_AmericanFormat.ThousandSeparator := ',';
-    m_AmericanFormat.DecimalSeparator := '.';
-    m_AmericanFormat.ShortDateFormat := 'mm/dd/yyyy';
-
   {$ELSE}
-  //Will be updated where needed, as they must be saved before and restored afterwards
-  //SysUtils.ThousandSeparator := ',';
-  //SysUtils.DecimalSeparator := '.';
-  //SysUtils.ShortDateFormat := 'mm/dd/yyyy';
-
   {$ENDIF}
-  END {THojaCalc.Create};
+  // does not depend on the compiler
+  m_AmericanFormat.ThousandSeparator := ',';
+  m_AmericanFormat.DecimalSeparator := '.';
+  m_AmericanFormat.ShortDateFormat := 'mm/dd/yyyy';
+END {THojaCalc.Create};
 
 
 CONSTRUCTOR THojaCalc.Create (strName: string; bMakeVisible: boolean; bReUseExisting: boolean = false);
@@ -556,14 +562,13 @@ CONSTRUCTOR THojaCalc.Create (strName: string; bMakeVisible: boolean; bReUseExis
   {$ENDIF}
   {$ENDIF}
   {$IFDEF COMPILER_7_UP}
-  //Will be updated where needed, as they must be saved before and restored afterwards
-  //SysUtils.ThousandSeparator := ',';
-  //SysUtils.DecimalSeparator := '.';
-  //SysUtils.ShortDateFormat := 'mm/dd/yyyy';
-
   {$ELSE}
-
   {$ENDIF} //
+  // does not depend on the compiler
+  m_AmericanFormat.ThousandSeparator := ',';
+  m_AmericanFormat.DecimalSeparator := '.';
+  m_AmericanFormat.ShortDateFormat := 'mm/dd/yyyy';
+  
   //Open program and document...
     LoadProg;
     LoadDoc;
@@ -870,8 +875,8 @@ FUNCTION THojaCalc.SaveDoc: boolean;
 FUNCTION THojaCalc.SaveDocAs (strName: string; bAsExcel97: boolean = false): boolean;
 
 { Function added by Massimiliano Gozzi on V0.92 }
-{ AsEXcel97 taken form V0.93 by Rômulo Silva Ramos }
-{ Saving as .xls on Excel 2000/2003 trick by Malte Tüllmann on V1.01 }
+{ AsEXcel97 taken form V0.93 by RÃ´mulo Silva Ramos }
+{ Saving as .xls on Excel 2000/2003 trick by Malte TÃ¼llmann on V1.01 }
 
   VAR
     vOoParams: variant;
@@ -902,7 +907,7 @@ FUNCTION THojaCalc.SaveDocAs (strName: string; bAsExcel97: boolean = false): boo
             IF (exVersion < 12)
             THEN //
             //Before Excel 2007 this was the method to force SaveAs Excel97 .xls
-            //by Malte Tüllmann on V1.01
+            //by Malte TÃ¼llmann on V1.01
               m_vDocument.Saveas(strName, - 4143, EmptyParam, EmptyParam, EmptyParam, EmptyParam)
             ELSE //
             // From Excel 2003 this is the way to force .xls file format (excel8)
@@ -2103,5 +2108,51 @@ begin
     end;
   end;
 end;
+
+PROCEDURE THojaCalc.SetPicture(FileName: string; xPosMM, yPosMM, xWidthMM, xHeightMM, xContrast: variant);
+var
+  ooShape: variant;
+  url: string;
+  ooBitmap: variant;
+  ooSize: variant;
+  ooPoint: variant;
+  ooPage: variant;
+  ExcelPicture: variant;
+  dDPMM: double;
+begin
+
+  if IsExcel then
+  begin
+    dDPMM := 72 / 25.4;
+    ExcelPicture := ActiveSheet.Shapes.AddPicture(FileName, LinkToFile := false, SaveWithDocument := true,
+      Left := xPosMM * dDPMM, Top := yPosMM * dDPMM, width := xWidthMM * dDPMM, Height := xHeightMM * dDPMM);
+  end
+  else if IsOpenOffice then
+  begin
+    ooBitmap := Document.CreateInstance('com.sun.star.drawing.BitmapTable');
+    ooBitmap.insertByName('Sign', FileName2URL(FileName));
+    url := ooBitmap.getByName('Sign');
+
+    ooShape := Document.CreateInstance('com.sun.star.drawing.GraphicObjectShape');
+    ooSize := Document.Bridge_GetStruct('com.sun.star.awt.Size');
+    ooPoint := Document.Bridge_GetStruct('com.sun.star.awt.Point');
+
+    ooPoint.x := xPosMM * 100;
+    ooPoint.y := yPosMM * 100;
+
+    ooSize.width := xWidthMM * 100;
+    ooSize.Height := xHeightMM * 100;
+
+    ooShape.Position := ooPoint;
+    ooShape.size := ooSize;
+    ooShape.Transparency := 0;
+    ooShape.AdjustContrast := xContrast;
+    ooShape.GraphicURL := url;
+
+    ooPage := ActiveSheet.drawPage;
+    ooPage.Add(ooShape);
+  end;
+end;
+
 
 END {UHojaCalc}.
